@@ -13,10 +13,6 @@ final: prev: {
   kdePackages = prev.kdePackages.overrideScope (
     kfinal: kprev:
     let
-      menuDir = final.runCommand "dolphin-menu" { } ''
-        mkdir -p $out/etc/xdg/menus
-        cp ${prev.kdePackages.plasma-workspace}/etc/xdg/menus/plasma-applications.menu $out/etc/xdg/menus/applications.menu
-      '';
       dolphin-plugins-fixed = kprev.dolphin-plugins.overrideAttrs (old: {
         nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [
           kprev.extra-cmake-modules
@@ -40,8 +36,10 @@ final: prev: {
         postBuild = ''
           rm $out/bin/dolphin
           makeWrapper ${kprev.dolphin}/bin/dolphin $out/bin/dolphin \
-            --set XDG_CONFIG_DIRS "${menuDir}/etc/xdg:$XDG_CONFIG_DIRS" \
-            --run "${kprev.kservice}/bin/kbuildsycoca6 --noincremental ${menuDir}/etc/xdg/menus/applications.menu"
+            --prefix PATH : "${prev.lib.makeBinPath [ kprev.kservice ]}" \
+            --suffix XDG_CONFIG_DIRS : "${kprev.plasma-workspace}/etc/xdg" \
+            --set XDG_MENU_PREFIX "plasma-" \
+            --run "${kprev.kservice}/bin/kbuildsycoca6 --noincremental ${kprev.plasma-workspace}/etc/xdg/menus/plasma-applications.menu"
         '';
         meta = kprev.dolphin.meta // {
           description = "Dolphin with plugins and fixed 'Open with' menu using plasma-applications.menu renamed to applications.menu";
